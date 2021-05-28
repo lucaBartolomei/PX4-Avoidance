@@ -65,6 +65,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
   INCLUDE_DIRS include
   CATKIN_DEPENDS roscpp rospy std_msgs mavros_msgs geometry_msgs mav_msgs sensor_msgs message_runtime tf message_runtime avoidance
+  LIBRARIES safe_landing_planner
 #  DEPENDS system_lib
 )
 
