@@ -31,7 +31,6 @@ class WaypointGenerator : public usm::StateMachine<SLPState> {
   **/
   void calculateWaypoint();
 
- protected:
   // config
   float yaw_setpoint_ = NAN;
   float yaw_speed_setpoint_ = NAN;
