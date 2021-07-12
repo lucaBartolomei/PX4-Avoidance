@@ -56,11 +56,7 @@ class SafeLandingPlanner {
   safe_landing_planner::SLPGridMsg raw_grid_;
 
   bool play_rosbag_ = false;
-
- protected:
-  Eigen::Vector3f position_ = Eigen::Vector3f::Zero();
-  Eigen::Vector2i pos_index_ = Eigen::Vector2i(-1, -1);
-
+  
   float n_points_thr_ = 1.f;
   float std_dev_thr_ = 0.1f;
   float grid_size_ = 10.f;
@@ -74,8 +70,12 @@ class SafeLandingPlanner {
   int min_n_land_cells_ = 9;
   bool size_update_ = false;
 
-  Grid grid_ = Grid(10.f, 1.f);
-  Grid previous_grid_ = Grid(10.f, 1.f);
+ protected:
+  Eigen::Vector3f position_ = Eigen::Vector3f::Zero();
+  Eigen::Vector2i pos_index_ = Eigen::Vector2i(-1, -1);
+
+  Grid grid_ = Grid(40.f, 1.f);
+  Grid previous_grid_ = Grid(40.f, 1.f);
 
   /**
   * @brief process the pointcloud and calculate mean and variance for points in

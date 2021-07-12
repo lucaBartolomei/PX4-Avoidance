@@ -45,7 +45,7 @@ void SafeLandingPlanner::processPointcloud() {
 
         // cloud for visualization of the binning
         visualization_cloud_.points.push_back(
-            avoidance::toXYZI(xyz, grid_index.x() * (grid_size_ / cell_size_) + grid_index.y()));
+            avoidance::toXYZI(xyz, mean_variance.second)); //grid_index.x() * (grid_size_ / cell_size_) + grid_index.y()));
       }
     }
   }

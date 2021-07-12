@@ -19,7 +19,8 @@ const std::vector<Eigen::Vector2f> exploration_pattern = {
 enum class SLPState { GOTO, LOITER, LAND, ALTITUDE_CHANGE, EVALUATE_GRID, GOTO_LAND };
 std::string toString(SLPState state);  // for logging
 
-static const float LAND_SPEED = 0.7f;
+static const float LAND_SPEED = 5.0f;
+const bool SIMULATION = true;
 
 class WaypointGenerator : public usm::StateMachine<SLPState> {
  public:
@@ -30,7 +31,7 @@ class WaypointGenerator : public usm::StateMachine<SLPState> {
   * @brief     computes the setpoints to be sent to the FCU
   **/
   void calculateWaypoint();
-
+  
   // config
   float yaw_setpoint_ = NAN;
   float yaw_speed_setpoint_ = NAN;
