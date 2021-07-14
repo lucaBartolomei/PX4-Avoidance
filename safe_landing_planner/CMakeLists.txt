@@ -17,8 +17,17 @@ find_package(catkin REQUIRED COMPONENTS
   mavlink
   message_generation
   avoidance
+  uncertainty_aware_planning_lib
 )
 find_package(PCL 1.7 REQUIRED)
+
+find_package(OpenCV 3.2.0 EXACT)
+if(NOT OpenCV_FOUND)
+  message(WARNING "Using OpenCV version 4.2.0")
+  find_package(OpenCV 4.2.0 EXACT REQUIRED)
+else()
+  message(WARNING "Using OpenCV version 3.2.0")
+endif()
 
 if(DISABLE_SIMULATION)
   message(STATUS "Building avoidance without Gazebo Simulation")
@@ -86,6 +95,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -123,7 +133,7 @@ add_executable(waypoint_generator_node src/nodes/waypoint_generator_node.cpp)
 # )
 target_link_libraries(safe_landing_planner_node
   safe_landing_planner
-  ${catkin_LIBRARIES} )
+  ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 target_link_libraries(waypoint_generator_node
     safe_landing_planner
     ${catkin_LIBRARIES} )

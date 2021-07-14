@@ -55,7 +55,8 @@ void WaypointGenerator::calculateWaypoint() {
 
   if (getState() != prev_slp_state_) {
     std::string state_str = toString(getState());
-    ROS_INFO("\033[1;36m [WGN] Update to %s state \033[0m", state_str.c_str());
+    if (VERBOSE) 
+      ROS_INFO("\033[1;36m [WGN] Update to %s state \033[0m", state_str.c_str());
   }
 }
 
@@ -147,12 +148,15 @@ usm::Transition WaypointGenerator::runGoTo() {
   }
 
   publishTrajectorySetpoints_(goal_, velocity_setpoint_, yaw_setpoint_, yaw_speed_setpoint_);
-  ROS_INFO("\033[1;32m [WGN] goTo %f %f %f - %f %f %f \033[0m\n", goal_.x(), goal_.y(), goal_.z(),
-           velocity_setpoint_.x(), velocity_setpoint_.y(), velocity_setpoint_.z());
+  if (VERBOSE) {
+    ROS_INFO("\033[1;32m [WGN] goTo %f %f %f - %f %f %f \033[0m\n", goal_.x(), goal_.y(), goal_.z(),
+             velocity_setpoint_.x(), velocity_setpoint_.y(), velocity_setpoint_.z());
+    ROS_INFO("[WGN] Landing Radius: xy  %f, z %f ", (goal_.topRows<2>() - position_.topRows<2>()).norm(),
+             fabsf(position_.z() - altitude_landing_area_percentile_));
+  }
+           
   altitude_landing_area_percentile_ = landingAreaHeightPercentile(80.f);
   can_land_hysteresis_matrix_.fill(0.0f);
-  ROS_INFO("[WGN] Landing Radius: xy  %f, z %f ", (goal_.topRows<2>() - position_.topRows<2>()).norm(),
-           fabsf(position_.z() - altitude_landing_area_percentile_));
 
   if (withinLandingRadius() && is_land_waypoint_ && !decision_taken_) {
     return usm::Transition::NEXT1;  // ALTITUDE_CHANGE
@@ -184,9 +188,10 @@ usm::Transition WaypointGenerator::runGoTo() {
 
 usm::Transition WaypointGenerator::runGoToLand() {
   publishTrajectorySetpoints_(goal_, velocity_setpoint_, avoidance::nextYaw(position_, goal_), yaw_speed_setpoint_);
-  ROS_INFO("\033[1;32m [WGN] goToLand %f %f %f - %f %f %f yaw %f \033[0m\n", goal_.x(), goal_.y(), goal_.z(),
-           velocity_setpoint_.x(), velocity_setpoint_.y(), velocity_setpoint_.z(),
-           avoidance::nextYaw(position_, goal_));
+  if (VERBOSE) 
+    ROS_INFO("\033[1;32m [WGN] goToLand %f %f %f - %f %f %f yaw %f \033[0m\n", goal_.x(), goal_.y(), goal_.z(),
+             velocity_setpoint_.x(), velocity_setpoint_.y(), velocity_setpoint_.z(),
+             avoidance::nextYaw(position_, goal_));
 
   if (withinLandingRadius()) {
     return usm::Transition::NEXT1;  // LAND
@@ -204,11 +209,14 @@ usm::Transition WaypointGenerator::runAltitudeChange() {
   float direction = (fabsf(position_.z() - altitude_landing_area_percentile_) - loiter_height_) < 0.f ? 1.f : -1.f;
   velocity_setpoint_.z() = direction * LAND_SPEED;
   publishTrajectorySetpoints_(goal_, velocity_setpoint_, loiter_yaw_, yaw_speed_setpoint_);
-  ROS_INFO("\033[1;35m [WGN] altitudeChange %f %f %f - %f %f %f yaw %f \033[0m", goal_.x(), goal_.y(), goal_.z(),
-           velocity_setpoint_.x(), velocity_setpoint_.y(), velocity_setpoint_.z(), yaw_setpoint_);
+  
+  if (VERBOSE) {
+    ROS_INFO("\033[1;35m [WGN] altitudeChange %f %f %f - %f %f %f yaw %f \033[0m", goal_.x(), goal_.y(), goal_.z(),
+             velocity_setpoint_.x(), velocity_setpoint_.y(), velocity_setpoint_.z(), yaw_setpoint_);
 
-  ROS_INFO("[WGN] Landing Radius: xy  %f, z %f ", (goal_.topRows<2>() - position_.topRows<2>()).norm(),
-           fabsf(position_.z() - altitude_landing_area_percentile_));
+    ROS_INFO("[WGN] Landing Radius: xy  %f, z %f ", (goal_.topRows<2>() - position_.topRows<2>()).norm(),
+             fabsf(position_.z() - altitude_landing_area_percentile_));
+  }
 
   if (inVerticalRange()) {
     start_seq_landing_decision_ = grid_slp_seq_;
@@ -223,8 +231,10 @@ usm::Transition WaypointGenerator::runLoiter() {
     goal_ = loiter_position_;
   }
   publishTrajectorySetpoints_(loiter_position_, nan_setpoint, loiter_yaw_, NAN);
-  ROS_INFO("\033[1;34m [WGN] Loiter %f %f %f - nan nan nan yaw %f \033[0m\n", loiter_position_.x(),
-           loiter_position_.y(), loiter_position_.z(), loiter_yaw_);
+  
+  if (VERBOSE) 
+    ROS_INFO("\033[1;34m [WGN] Loiter %f %f %f - nan nan nan yaw %f \033[0m\n", loiter_position_.x(),
+             loiter_position_.y(), loiter_position_.z(), loiter_yaw_);
 
   if (abs(grid_slp_seq_ - start_seq_landing_decision_) <= 20) {
     for (int i = 0; i < grid_slp_.land_.rows(); i++) {
@@ -256,8 +266,9 @@ usm::Transition WaypointGenerator::runLand() {
   Eigen::Vector3f vel_sp = nan_setpoint;
   vel_sp.z() = -LAND_SPEED;
   publishTrajectorySetpoints_(loiter_position_, vel_sp, loiter_yaw_, NAN);
-  ROS_INFO("\033[1;36m [WGN] Land %f %f %f - nan nan %f yaw %f \033[0m\n", loiter_position_.x(), loiter_position_.y(),
-           loiter_position_.z(), vel_sp.z(), loiter_yaw_);
+  if (VERBOSE) 
+    ROS_INFO("\033[1;36m [WGN] Land %f %f %f - nan nan %f yaw %f \033[0m\n", loiter_position_.x(), loiter_position_.y(),
+             loiter_position_.z(), vel_sp.z(), loiter_yaw_);
   
   // Store info about velocity
   if (SIMULATION)
@@ -267,10 +278,13 @@ usm::Transition WaypointGenerator::runLand() {
 }
 
 usm::Transition WaypointGenerator::runEvaluateGrid() {
-  ROS_INFO("\033[1;31m [WGN] runEvaluateGrid \033[0m\n");
+  if (VERBOSE) {
+    ROS_INFO("\033[1;31m [WGN] runEvaluateGrid \033[0m\n");
+    ROS_INFO("\033[1;31m [WGN] runEvaluateGrid %f %f %f - nan nan nan yaw %f \033[0m\n", loiter_position_.x(),
+             loiter_position_.y(), loiter_position_.z(), loiter_yaw_);
+  }
+  
   publishTrajectorySetpoints_(loiter_position_, nan_setpoint, loiter_yaw_, NAN);
-  ROS_INFO("\033[1;31m [WGN] runEvaluateGrid %f %f %f - nan nan nan yaw %f \033[0m\n", loiter_position_.x(),
-           loiter_position_.y(), loiter_position_.z(), loiter_yaw_);
 
   landing_radius_ = 0.5f;
   Eigen::Vector2i center = Eigen::Vector2i(grid_slp_.land_.rows() / 2, grid_slp_.land_.cols() / 2);
@@ -302,7 +316,8 @@ usm::Transition WaypointGenerator::runEvaluateGrid() {
             position_.z());
 
         velocity_setpoint_.z() = NAN;
-        ROS_INFO("\033[1;31m [WGN] Found landing area in grid at %f %f %f \033[0m", goal_.x(), goal_.y(), goal_.z());
+        if (VERBOSE)
+          ROS_INFO("\033[1;31m [WGN] Found landing area in grid at %f %f %f \033[0m", goal_.x(), goal_.y(), goal_.z());
         return usm::Transition::NEXT2;  // GOTO_LAND
       }
     }

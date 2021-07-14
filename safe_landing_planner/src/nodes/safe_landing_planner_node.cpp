@@ -218,7 +218,7 @@ void SafeLandingPlannerNode::pointCloudTransformThread() {
       if (tf_listener_.canTransform("/local_origin", newest_cloud_msg_.header.frame_id,
                                     newest_cloud_msg_.header.stamp)) {
         try {
-          pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
+          pcl::PointCloud<pcl::PointXYZI> pcl_cloud;
           // transform message to pcl type
           pcl::fromROSMsg(newest_cloud_msg_, pcl_cloud);
           cloud_msg_lock.reset();

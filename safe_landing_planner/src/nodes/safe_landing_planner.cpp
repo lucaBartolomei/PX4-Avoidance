@@ -1,6 +1,8 @@
 #include "safe_landing_planner/safe_landing_planner.hpp"
 #include "avoidance/common.h"
 
+#include <uncertainty_aware_planning/common/semantics_classes.hpp>
+
 namespace avoidance {
 
 void SafeLandingPlanner::runSafeLandingPlanner() {
@@ -29,7 +31,8 @@ void SafeLandingPlanner::processPointcloud() {
   visualization_cloud_.header = cloud_.header;
   visualization_cloud_.points.clear();
   //ROS_INFO("Input cloud size %lu ", cloud_.points.size());
-  for (const pcl::PointXYZ& xyz : cloud_) {
+  for (const pcl::PointXYZI& xyz : cloud_) {
+   // std::cout << xyz << std::endl;
     if (!std::isnan(xyz.x) && !std::isnan(xyz.y) && !std::isnan(xyz.z)) {
       // check if point is inside the grid
       if (isInsideGrid(xyz.x, xyz.y)) {
@@ -41,11 +44,13 @@ void SafeLandingPlanner::processPointcloud() {
         std::pair<float, float> mean_variance = computeOnlineMeanVariance(
             prev_mean, prev_variance, xyz.z, static_cast<float>(grid_.getCounter(grid_index)));
         grid_.setMean(grid_index, mean_variance.first);
+        grid_.setSemantics(grid_index, static_cast<int>(xyz.intensity));
         grid_.setVariance(grid_index, mean_variance.second);
 
         // cloud for visualization of the binning
         visualization_cloud_.points.push_back(
-            avoidance::toXYZI(xyz, mean_variance.second)); //grid_index.x() * (grid_size_ / cell_size_) + grid_index.y()));
+            avoidance::toXYZI(pcl::PointXYZ(xyz.x, xyz.y, xyz.z),
+                              mean_variance.second)); //grid_index.x() * (grid_size_ / cell_size_) + grid_index.y()));
       }
     }
   }
@@ -78,7 +83,18 @@ void SafeLandingPlanner::isLandingPossible() {
   for (int i = 0; i < size; i++) {
     for (int j = 0; j < size; j++) {
       Eigen::Vector2i idx(i, j);
-      if (grid_.getCounter(idx) < n_points_thr_ || sqrtf(grid_.getVariance(idx)) > std_dev_thr_) {
+      int counter = grid_.getCounter(idx);
+      float std_dev = sqrtf(grid_.getVariance(idx));
+      //
+      int semantic_class = uap::fromGrayIntensityToClass(grid_.getSemantics(idx));
+      bool valid_class = true;
+      if (use_semantics_ &&
+          semantic_class != uap::SemClasses::kTerrain &&
+          semantic_class != uap::SemClasses::kPavement) {
+        valid_class = false;
+      }
+      //
+      if (counter < n_points_thr_ || std_dev > std_dev_thr_ || !valid_class) {
         grid_.land_(i, j) = 0;
       } else {
         grid_.land_(i, j) = 1;

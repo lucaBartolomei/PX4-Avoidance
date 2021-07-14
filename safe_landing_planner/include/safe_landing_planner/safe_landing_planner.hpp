@@ -18,7 +18,7 @@ class SafeLandingPlanner {
   SafeLandingPlanner() = default;
   ~SafeLandingPlanner() = default;
 
-  pcl::PointCloud<pcl::PointXYZ> cloud_;
+  pcl::PointCloud<pcl::PointXYZI> cloud_;
   pcl::PointCloud<pcl::PointXYZI> visualization_cloud_;
 
   double timeout_critical_ = 0.5;
@@ -69,6 +69,7 @@ class SafeLandingPlanner {
   int smoothing_size_ = 1;
   int min_n_land_cells_ = 9;
   bool size_update_ = false;
+  bool use_semantics_ = false;
 
  protected:
   Eigen::Vector3f position_ = Eigen::Vector3f::Zero();
