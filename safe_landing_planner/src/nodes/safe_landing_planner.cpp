@@ -89,8 +89,8 @@ void SafeLandingPlanner::isLandingPossible() {
       int semantic_class = uap::fromGrayIntensityToClass(grid_.getSemantics(idx));
       bool valid_class = true;
       if (use_semantics_ &&
-          semantic_class != uap::SemClasses::kTerrain &&
-          semantic_class != uap::SemClasses::kPavement) {
+          semantic_class != uap::SemClasses::kTerrain /*&&
+          semantic_class != uap::SemClasses::kPavement*/) {
         valid_class = false;
       }
       //
